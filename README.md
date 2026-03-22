@@ -230,10 +230,10 @@ Cada Value Object possui um `@Converter(autoApply = true)` para ser aplicado ao 
 Todos os servicos sao `@Transactional` com injecao de dependencia via construtor (`@RequiredArgsConstructor`).
 
 - **`UsuarioService`**: CRUD de usuarios.
-- **`LivroService`**: CRUD de livros + integracao com Google Books para busca e recomendacao.
+- **`LivroService`**: CRUD de livros e integracao com Google Books para busca e recomendacao.
 - **`EmprestimoService`**: CRUD de emprestimos com regras de negocio:
   - Impede emprestimo duplicado do mesmo livro verificando se ja existe emprestimo ativo.
-  - Calcula `dataVencimento` automaticamente a partir de `periodoVencimento` quando nao informada.
+  - Calcula `dataVencimento` a partir de `periodoVencimento` quando nao informada.
   - Atualiza status em grupo
 - **`GoogleBooksService`**: Integra com a API Google Books usando `RestClient`, retornando livros convertidos para o formato interno.
 
@@ -247,7 +247,7 @@ Os DTOs sao implementados com **Java Records**:
 - `LivroDTO(id, titulo, autor, isbn, dataPublicacao, categorias)`
 - `EmprestimoDTO(id, nomeUsuario, tituloLivro, dataEmprestimo, dataVencimento, dataDevolucao, periodoVencimento, status, livro, usuario)`
 
-DTOs do Google Books: `GoogleBooksResponseDTO`, `GoogleBooksItensDTO`, `VolumeDTO`, `IndustryIdentifierDTO` A reposta da API do google e transformada para o formato utilizado pelo backend `LivroDTO`.
+DTOs do Google Books: `GoogleBooksResponseDTO`, `GoogleBooksItensDTO`, `VolumeDTO`, `IndustryIdentifierDTO`.
 
 ### Endpoints REST
 
@@ -256,7 +256,7 @@ DTOs do Google Books: `GoogleBooksResponseDTO`, `GoogleBooksItensDTO`, `VolumeDT
 | Metodo | Rota                | Descricao                                      |
 |--------|---------------------|-------------------------------------------------|
 | GET    | `/usuarios`         | Lista todos os usuarios                         |
-| GET    | `/usuarios/{nome}`  | Busca usuarios por nome (case-insensitive)      |
+| GET    | `/usuarios/{nome}`  | Busca usuarios por nome                         |
 | POST   | `/usuarios`         | Cria um novo usuario                            |
 | PUT    | `/usuarios`         | Atualiza um usuario                             |
 | DELETE | `/usuarios/{id}`    | Remove um usuario                               |
@@ -266,7 +266,7 @@ DTOs do Google Books: `GoogleBooksResponseDTO`, `GoogleBooksItensDTO`, `VolumeDT
 | Metodo | Rota                                  | Descricao                                          |
 |--------|---------------------------------------|----------------------------------------------------|
 | GET    | `/livros`                             | Lista todos os livros                              |
-| GET    | `/livros/{titulo}`                    | Busca livros por titulo (case-insensitive)         |
+| GET    | `/livros/{titulo}`                    | Busca livros por titulo                            |
 | GET    | `/livros/recomendar/{idUsuario}`      | Recomenda livros para o usuario baseado em categorias |
 | GET    | `/livros/google/{consulta}/{pagina}`  | Busca livros na API Google Books                   |
 | POST   | `/livros`                             | Cria um novo livro                                 |
@@ -286,14 +286,14 @@ DTOs do Google Books: `GoogleBooksResponseDTO`, `GoogleBooksItensDTO`, `VolumeDT
 
 ### Infraestrutura
 
-- **CORS**: Permite origens `localhost:4200` e `localhost:8080`, metodos GET/POST/PUT/DELETE/PATCH.
-- **Jackson**: `ObjectMapper` customizado com `findAndRegisterModules()` para converter dados nos testes.
-- **Google Books**: Configuracao via `application.properties` com `RestClient` do Spring 6..
+- **CORS**: Configurado para permitir requisicoes internas e do frontend.
+- **Jackson**: `ObjectMapper` para converter dados nos testes.
+- **Google Books**: Configuracao via `application.properties` com `RestClient` para fazer requisicoes a API do Google Books.
 
 ### Repositorios
 
-- **`LivroRepository`**: Query JPQL customizada `listarRecomendados` para buscar livros com categorias que o usuario tenha realizado emprestimo e que nao estejam em um empresitmo aberto.
-- **`EmprestimoRepository`**: Queries JPQL para listar emprestimos e buscar por nome de usuario.
+- **`LivroRepository`**: Query customizada `listarRecomendados` para buscar livros com categorias que o usuario tenha realizado emprestimo e que nao estejam em um empresitmo aberto.
+- **`EmprestimoRepository`**: Queries para listar emprestimos e buscar por nome de usuario.
 - **`UsuarioRepository`**: Busca por nome com `findByNomeContainingIgnoreCase`.
 
 ---
@@ -327,17 +327,17 @@ src/app/
 
 ### Componente Generico de Tabela
 
-O `TabelaComponentComponent<T extends Entity>` e o componente principal, foi utilizado devido a padronizacao dos services, para evitar duplicacao de codigo e facilitar o desenvolvimento.
+O `TabelaComponentComponent<T extends Entity>` e o componente principal, ele foi criado com o objetivo de facilitar e agilizar o desenvolvimento. Esse componente e responsavel pelas acoes basicas do CRUD, utilizando uma interface para os services.
 
 **Inputs:**
 
 | Input               | Tipo                   | Descricao                                     |
 |---------------------|------------------------|-----------------------------------------------|
-| `displayedColumns`  | `string[]`             | Colunas a exibir (chaves do objeto)           |
+| `displayedColumns`  | `string[]`             | Colunas a exibir                              |
 | `displayedLabels`   | `string[]`             | Labels das colunas                            |
 | `service`           | `CrudService<T>`       | Servico que implementa as operacoes CRUD      |
 | `dialogComponent`   | `ComponentType<any>`   | Componente do dialog de criacao/edicao        |
-| `actions`           | `Actions[]`            | Acoes em lote (ex: Devolver, Recomendar)      |
+| `actions`           | `Actions[]`            | Acoes                                         |
 | `emptyItem`         | `() => T`              | Factory para novo item vazio                  |
 
 **Output:**
@@ -347,14 +347,16 @@ O `TabelaComponentComponent<T extends Entity>` e o componente principal, foi uti
 | `selectionChange`   | `EventEmitter<T[]>`    | Emite itens selecionados                      |
 
 **Funcionalidades:**
-- Busca com debounce (300ms) via `Subject` + `switchMap`
+- Busca com debounce via `Subject` + `switchMap`
 - CRUD completo via dialogs modais passadas pelo componente
-- Selecao multipla com checkboxes (`SelectionModel`) para acoes
-- Acoes que sao passadas para o componente
+- Selecao multipla com checkboxes para acoes
+- Acoes aplicadas em grupo
 - Spinner de carregamento
 - Deteccao automatica de datas para formatacao com `DatePipe` (`dd/MM/yyyy`)
 
 **Interface `CrudService<T>`:**
+
+O `CrudService<T>` e uma interface que define como a implementacao de um service de CRUD deveria ser para ser utilizado no `TabelaComponentComponent<T extends Entity>`
 
 ```typescript
 interface CrudService<T extends Entity> {
