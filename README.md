@@ -1,6 +1,7 @@
 # Sistema de Gerenciamento de Biblioteca
 
 Sistema fullstack para gerenciamento de uma biblioteca, permitindo o cadastro de **usuarios**, **livros** e **emprestimos**, com recomendacao de livros baseada em categorias e integracao com a API do Google Books.
+Esse projeto foi desenvolvido como parte de um desafio tecnico proposto pela Elotech.
 
 ## Sumario
 
@@ -25,7 +26,8 @@ Sistema fullstack para gerenciamento de uma biblioteca, permitindo o cadastro de
 
 ## Arquitetura Geral
 
-O projeto segue uma arquitetura de tres camadas com separacao clara de responsabilidades:
+A ideia do projeto foi manter as responsabilidades claras e evitar que alguma camada tenha conhecimento
+indevido de outra. Para isso foi adotado a seguinte arquitetura:
 
 ```
 ┌──────────────────────────────────────────────┐
@@ -43,7 +45,6 @@ O projeto segue uma arquitetura de tres camadas com separacao clara de responsab
 │            localhost:3306                     │
 └──────────────────────────────────────────────┘
 ```
-
 ---
 
 ## Tecnologias
@@ -61,7 +62,7 @@ O projeto segue uma arquitetura de tres camadas com separacao clara de responsab
 
 ## Docker
 
-O projeto inteiro e orquestrado via Docker Compose com tres servicos:
+O projeto roda no docker sendo orquestrado com servicos para o backend, frontend e o banco de dados
 
 ### Servicos
 
@@ -73,9 +74,9 @@ O projeto inteiro e orquestrado via Docker Compose com tres servicos:
 
 ### Dockerfiles
 
-**Backend** (`backend/Dockerfile`): Build multi-stage - compila com Maven, executa com Eclipse Temurin JDK 21.
+**Backend** (`backend/Dockerfile`): Arquivo Dockerfile para o backend.
 
-**Frontend** (`frontend/Dockerfile`): Build multi-stage - compila com Node 18 (`npm run build`), serve arquivos estaticos com Nginx Alpine.
+**Frontend** (`frontend/Dockerfile`): Arquivo Dockerfile para o frontend.
 
 ### Variaveis de Ambiente (`.env`)
 
@@ -102,15 +103,13 @@ dev.bat logs    # Ver logs
 
 ### Configuracao
 
-Copie `exemplo.env` para `.env` e preencha a chave do Google Books:
-
-```bash
-cp exemplo.env .env
-```
+Para rodar o projeto e necessario configurar o `.env` para isso foi deixado de exemplo um arquivo
+`exemplo.env`, a unica configuracao relevante nesse arquivo seria a atualizacao da API key do Google Books
 
 ### Dump do Banco
 
-O arquivo `dump.sql` na raiz contem um dump MySQL com dados de exemplo (6 usuarios, 14 livros, 5 emprestimos) que pode ser importado para popular o banco inicial.
+Para facilitar a visualizacao do projeto e a realizacao de testes foi criado um dump do banco de 
+dados, esse dump contem informacoes sobre usuarios, livros e emprestimos.
 
 ---
 
@@ -171,7 +170,11 @@ com.elotech.teste
 
 #### Entidades
 
-Todas herdam de `AbstractEntity`, que fornece `id` (auto-gerado, `GenerationType.IDENTITY`).
+No escopo inicial do projeto foi definido a criacao de uma `AbstractEntity` que forneceria
+campos que sao utilizados em todas as entidades no sistema, nesse caso foi utilizado para o `id`,
+com a ideia de expandir para outros casos principalmente considerando versionamento.
+
+As entidades utilizadas foram criadas da seguinte forma:
 
 **`Usuario`**
 | Campo          | Tipo        | Coluna           | Descricao                          |
@@ -208,17 +211,19 @@ Todas herdam de `AbstractEntity`, que fornece `id` (auto-gerado, `GenerationType
 | `FECHADO_EM_DIA`   | FD     | Fechado, dentro do prazo      |
 | `FECHADO_ATRASADO` | FT     | Fechado, fora do prazo        |
 
-O status e calculado automaticamente no metodo `definirStatus()` com base nas datas de vencimento e devolucao.
+O status e calculado automaticamente no metodo `definirStatus()` com base nas datas de vencimento e devolucao. O status tambem pode ser inferido se o usuario passar um periodo vencimento, isso calcula
+automaticamente a data de vencimento e o status do emprestimo
 
 #### Value Objects
 
-O projeto utiliza o padrao **Value Object** (DDD) para encapsular validacao e logica de negocios:
+Com o objeto de centralizar o tratamento de alguns dados e garantir a imutabilidade do sistema foi definido
+o uso do padrao **Value Object** para os seguintes tipos:
 
 - **`VoData`**: Encapsula `ZonedDateTime`. Metodos utilitarios: `hoje()`, `maisDias()`, `menosDias()`, `isAntesDe()`, `isDepoisDe()`. Implementa `Comparable<VoData>`.
 - **`VoEmail`**: Valida formato de email via regex `^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$`. Lanca `IllegalArgumentException` se invalido.
 - **`VoTelefone`**: Normaliza numeros de 11 digitos para formato `+55...` e valida o padrao `^\+55\d{11}$`.
 
-Cada Value Object possui um `@Converter(autoApply = true)` correspondente para persistencia automatica via JPA, alem de serem `@Embeddable` utilizados com `@Embedded` + `@AttributeOverride` nas entidades.
+Cada Value Object possui um `@Converter(autoApply = true)` para ser aplicado ao persistir dados.
 
 ### Camada de Servico
 
@@ -227,22 +232,22 @@ Todos os servicos sao `@Transactional` com injecao de dependencia via construtor
 - **`UsuarioService`**: CRUD de usuarios.
 - **`LivroService`**: CRUD de livros + integracao com Google Books para busca e recomendacao.
 - **`EmprestimoService`**: CRUD de emprestimos com regras de negocio:
-  - Impede emprestimo duplicado do mesmo livro (verifica se ja existe emprestimo ativo).
+  - Impede emprestimo duplicado do mesmo livro verificando se ja existe emprestimo ativo.
   - Calcula `dataVencimento` automaticamente a partir de `periodoVencimento` quando nao informada.
-  - Atualiza status em lote (devolucao de multiplos emprestimos via PATCH).
+  - Atualiza status em grupo
 - **`GoogleBooksService`**: Integra com a API Google Books usando `RestClient`, retornando livros convertidos para o formato interno.
 
 ### Camada de API
 
 #### DTOs
 
-Os DTOs sao implementados como **Java Records** para imutabilidade:
+Os DTOs sao implementados com **Java Records**:
 
 - `UsuarioDTO(id, nome, email, dataCadastro, telefone)`
 - `LivroDTO(id, titulo, autor, isbn, dataPublicacao, categorias)`
 - `EmprestimoDTO(id, nomeUsuario, tituloLivro, dataEmprestimo, dataVencimento, dataDevolucao, periodoVencimento, status, livro, usuario)`
 
-DTOs do Google Books: `GoogleBooksResponseDTO`, `GoogleBooksItensDTO`, `VolumeDTO`, `IndustryIdentifierDTO` — mapeiam a resposta da API do Google Books para o formato interno `LivroDTO`.
+DTOs do Google Books: `GoogleBooksResponseDTO`, `GoogleBooksItensDTO`, `VolumeDTO`, `IndustryIdentifierDTO` A reposta da API do google e transformada para o formato utilizado pelo backend `LivroDTO`.
 
 ### Endpoints REST
 
@@ -282,14 +287,13 @@ DTOs do Google Books: `GoogleBooksResponseDTO`, `GoogleBooksItensDTO`, `VolumeDT
 ### Infraestrutura
 
 - **CORS**: Permite origens `localhost:4200` e `localhost:8080`, metodos GET/POST/PUT/DELETE/PATCH.
-- **Jackson**: `ObjectMapper` customizado com `findAndRegisterModules()` para suporte a `ZonedDateTime` (JSR310).
-- **Google Books**: Configuracao via `application.properties` com `RestClient` do Spring 6.
-- **Swagger**: Disponivel via SpringDoc OpenAPI em `/swagger-ui.html`.
+- **Jackson**: `ObjectMapper` customizado com `findAndRegisterModules()` para converter dados nos testes.
+- **Google Books**: Configuracao via `application.properties` com `RestClient` do Spring 6..
 
 ### Repositorios
 
-- **`LivroRepository`**: Query JPQL customizada `listarRecomendados` que busca livros com categorias semelhantes aos ja emprestados pelo usuario, excluindo livros ja lidos e com emprestimos ativos.
-- **`EmprestimoRepository`**: Queries JPQL para listar emprestimos com eager loading (`JOIN`) e buscar por nome de usuario.
+- **`LivroRepository`**: Query JPQL customizada `listarRecomendados` para buscar livros com categorias que o usuario tenha realizado emprestimo e que nao estejam em um empresitmo aberto.
+- **`EmprestimoRepository`**: Queries JPQL para listar emprestimos e buscar por nome de usuario.
 - **`UsuarioRepository`**: Busca por nome com `findByNomeContainingIgnoreCase`.
 
 ---
@@ -323,7 +327,7 @@ src/app/
 
 ### Componente Generico de Tabela
 
-O `TabelaComponentComponent<T extends Entity>` e o componente central do frontend, eliminando duplicacao de codigo CRUD entre as paginas.
+O `TabelaComponentComponent<T extends Entity>` e o componente principal, foi utilizado devido a padronizacao dos services, para evitar duplicacao de codigo e facilitar o desenvolvimento.
 
 **Inputs:**
 
@@ -344,11 +348,10 @@ O `TabelaComponentComponent<T extends Entity>` e o componente central do fronten
 
 **Funcionalidades:**
 - Busca com debounce (300ms) via `Subject` + `switchMap`
-- CRUD completo via dialogs modais (MatDialog)
-- Selecao multipla com checkboxes (`SelectionModel`) quando existem acoes
-- Acoes em lote (menu dropdown com callbacks que retornam `Observable`)
+- CRUD completo via dialogs modais passadas pelo componente
+- Selecao multipla com checkboxes (`SelectionModel`) para acoes
+- Acoes que sao passadas para o componente
 - Spinner de carregamento
-- Mensagem de "Nenhum registro encontrado" quando vazio
 - Deteccao automatica de datas para formatacao com `DatePipe` (`dd/MM/yyyy`)
 
 **Interface `CrudService<T>`:**
@@ -376,7 +379,7 @@ interface CrudService<T extends Entity> {
 - **`UsuarioDialogComponent`**: Formulario com campos nome, email, telefone e dataCadastro (MatDatepicker). Validacao via `NgForm`.
 - **`LivroDialogComponent`**: Formulario com autocomplete para buscar livros no Google Books (debounced). Campo de categorias com `MatChipGrid` (adicionar/remover tags). Ao selecionar um livro do Google, preenche titulo, autor, ISBN, data e categorias automaticamente.
 - **`EmprestimoDialogComponent`**: Dois autocompletes (usuario e livro) com busca debounced. Tres datepickers com refs unicos (`pickerEmprestimo`, `pickerVencimento`, `pickerDevolucao`). Campo `periodoVencimento` numerico.
-- **`EmprestimoRecomendacaoDialogComponent`**: Ao selecionar um usuario, busca livros recomendados (baseados em categorias) e permite selecionar um para emprestimo.
+- **`EmprestimoRecomendacaoDialogComponent`**: Formulario para recomendar livros ao selecionar um usuario, busca livros recomendados e permite selecionar um para emprestimo.
 
 ### Rotas
 
@@ -400,32 +403,32 @@ interface CrudService<T extends Entity> {
 
 1. **Value Objects (DDD)**: Campos como email, telefone e data sao encapsulados em Value Objects (`VoEmail`, `VoTelefone`, `VoData`) que validam no momento da criacao, garantindo consistencia no dominio. Cada VO possui um `@Converter(autoApply = true)` para persistencia transparente.
 
-2. **Entidades com construtores protegidos**: Uso do padrao factory (`Entidade.of(...)`) para criacao, evitando instanciacao invalida. `NoArgsConstructor(PROTECTED)` atende ao requisito do JPA sem expor construtor vazio.
+2. **Entidades com construtores protegidos**: Uso do padrao factory (`Entidade.of(...)`) para criacao.
+Protegendo as entidades ao nao permitir o acesso aos seus construtores.
 
-3. **Status calculado automaticamente**: `EmprestimoStatus` e derivado das datas (emprestimo, vencimento, devolucao) no metodo `definirStatus()`, eliminando inconsistencias manuais.
+3. **Status calculado automaticamente**: `EmprestimoStatus` e derivado das datas de emprestimo, vencimento e devolucao, calculado automaticamente no `definirStatus()`, eliminando inconsistencias manuais.
 
 4. **Recomendacao por categorias**: Query JPQL no `LivroRepository` que encontra livros com categorias em comum com os ja emprestados pelo usuario, excluindo livros ja lidos e com emprestimos ativos.
 
-5. **DTOs como Records**: Imutabilidade e concisao com Java Records para todos os DTOs.
+5. **DTOs como Records**: Imutabilidade com Java Records para todos os DTOs.
 
-6. **Google Books como REST Client**: Uso do `RestClient` do Spring 6 (nao RestTemplate) com configuracao externalizada via `@ConfigurationProperties`.
+6. **Google Books como REST Client**: Uso do `RestClient` do Spring 6 com configuracao externalizada via `@ConfigurationProperties`.
 
 ### Frontend
 
 1. **Componente generico de tabela**: `TabelaComponentComponent<T>` elimina duplicacao de CRUD entre as tres paginas, aceitando qualquer servico que implemente `CrudService<T>` e qualquer dialog component.
 
-2. **Standalone components**: Todos os componentes sao standalone (Angular 19), sem `NgModule`, com imports declarados diretamente no `@Component`.
+2. **Standalone components**: Todos os componentes sao standalone.
 
-3. **Busca com debounce**: Todas as buscas (tabela, autocomplete de livros, autocomplete de usuarios) utilizam `Subject` + `debounceTime(300)` + `distinctUntilChanged` + `switchMap` para evitar requisicoes desnecessarias.
+3. **Busca com debounce**: Todas as buscas (tabela, autocomplete de livros, autocomplete de usuarios) utilizam `Subject` + `debounceTime(300)` + `distinctUntilChanged` + `switchMap` para nao realizar requisicoes desnecessarias e esperar o input do usuario.
 
-4. **Locale brasileiro**: Datas exibidas em formato `dd/MM/yyyy`, datepickers em portugues, validacao de telefone no padrao `+55`.
+4. **Angular Material**: Foi utilizado o angular material para facilitar o desenvolvimento do frontend.
 
-5. **Angular Material**: Design system completo com MatTable, MatDialog, MatAutocomplete, MatDatepicker, MatChipGrid, MatSidenav, MatSnackBar, MatProgressSpinner.
-
-6. **Acoes em lote**: O componente de tabela suporta selecao multipla com checkboxes e acoes em lote (como "Devolver" para emprestimos), onde cada acao e um callback que retorna `Observable` para controle de fluxo.
+6. **Acoes em grupo**: O componente de tabela suporta selecao multipla com checkboxes e acoes em grupo,
+essas acoes tem como objetivo facilitar o uso, posteriormente poderiam ser implementadas acoes como excluir para todas as telas.
 
 ### Infraestrutura
 
-1. **Docker Compose**: Orquestracao simples com `dev.bat` para subir/parar o ambiente completo.
-2. **Multi-stage builds**: Tanto backend quanto frontend usam builds multi-stage para imagens Docker otimizadas (build separado da execucao).
+1. **Docker Compose**: Orquestracao simples para subir o ambiente completo.
+2. **Multi-stage builds**: Tanto backend quanto frontend usam builds multi-stage para imagens Docker.
 3. **DDL auto-update**: `spring.jpa.hibernate.ddl-auto=update` gera/atualiza tabelas automaticamente a partir das entidades JPA.
