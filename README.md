@@ -106,6 +106,8 @@ dev.bat logs    # Ver logs
 Para rodar o projeto e necessario configurar o `.env` para isso foi deixado de exemplo um arquivo
 `exemplo.env`, a unica configuracao relevante nesse arquivo seria a atualizacao da API key do Google Books
 
+É importante ressaltar que e necessario criar o arquivo `.env`, visto que ele nao e incluso no projeto por questoes de seguranca
+
 ### Dump do Banco
 
 Para facilitar a visualizacao do projeto e a realizacao de testes foi criado um dump do banco de 
