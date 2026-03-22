@@ -1,0 +1,39 @@
+/* You can add global styles to this file, and also import other style files */
+@use "@angular/material" as mat;
+@include mat.core();
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+$custom-app-primary: mat.m2-define-palette(mat.$m2-grey-palette, 900);
+$custom-app-secondary: mat.m2-define-palette(mat.$m2-lime-palette, 200);
+$custom-app-warn: mat.m2-define-palette(mat.$m2-red-palette);
+
+$custom-theme: mat.m2-define-light-theme(
+  (
+    color: (
+      primary: $custom-app-primary,
+      accent: $custom-app-secondary,
+      warn: $custom-app-warn,
+    ),
+  )
+);
+
+
+@include mat.core-theme($custom-theme);
+@include mat.all-component-themes($custom-theme);
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  @include mat.theme((
+    typography: (
+      plain-family: 'Inter, sans-serif',
+      brand-family: 'Inter, sans-serif',
+    ),
+  ));
+}

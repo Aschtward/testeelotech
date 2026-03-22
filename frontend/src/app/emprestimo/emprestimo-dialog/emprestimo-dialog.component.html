@@ -1,0 +1,112 @@
+<h2 mat-dialog-title>
+  {{ emprestimo.id ? "Editar Empréstimo" : "Novo Empréstimo" }}
+</h2>
+<form #form="ngForm">
+  <mat-dialog-content class="dialog-content">
+    <mat-form-field class="w-full">
+      <mat-label>Usuário</mat-label>
+      <input
+        matInput
+        name="buscaUsuario"
+        [(ngModel)]="buscaUsuario"
+        [matAutocomplete]="autoTitulo"
+        (input)="onUsuarioInput($any($event.target).value)"
+        required
+      />
+      <mat-autocomplete #autoTitulo="matAutocomplete">
+        @for (usuario of usuarios; track usuario.id) {
+          <mat-option
+            [value]="usuario.nome"
+            (onSelectionChange)="selecionarUsuario(usuario)"
+          >
+            {{ usuario.nome }}
+          </mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Livro</mat-label>
+      <input
+        matInput
+        name="buscaLivro"
+        [(ngModel)]="buscaLivro"
+        [matAutocomplete]="autoLivro"
+        (input)="onLivroInput($any($event.target).value)"
+        required
+      />
+      <mat-autocomplete #autoLivro="matAutocomplete">
+        @for (livro of livros; track livro.id) {
+          <mat-option
+            [value]="livro.titulo"
+            (onSelectionChange)="selecionarLivro(livro)"
+          >
+            {{ livro.titulo }}
+          </mat-option>
+        }
+      </mat-autocomplete>
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Período de Vencimento</mat-label>
+      <input
+        matInput
+        type="number"
+        name="periodoVencimento"
+        [(ngModel)]="emprestimo.periodoVencimento"
+      />
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Data de Emprestimo</mat-label>
+      <input
+        matInput
+        name="dataEmprestimo"
+        [matDatepicker]="pickerEmprestimo"
+        [(ngModel)]="emprestimo.dataEmprestimo"
+        [max]="hoje"
+        required
+      />
+      <mat-datepicker-toggle
+        matIconSuffix
+        [for]="pickerEmprestimo"
+      ></mat-datepicker-toggle>
+      <mat-datepicker #pickerEmprestimo></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Data de Vencimento</mat-label>
+      <input
+        matInput
+        name="dataVencimento"
+        [matDatepicker]="pickerVencimento"
+        [(ngModel)]="emprestimo.dataVencimento"
+      />
+      <mat-datepicker-toggle
+        matIconSuffix
+        [for]="pickerVencimento"
+      ></mat-datepicker-toggle>
+      <mat-datepicker #pickerVencimento></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Data de Devolução</mat-label>
+      <input
+        matInput
+        name="dataDevolucao"
+        [matDatepicker]="pickerDevolucao"
+        [(ngModel)]="emprestimo.dataDevolucao"
+      />
+      <mat-datepicker-toggle
+        matIconSuffix
+        [for]="pickerDevolucao"
+      ></mat-datepicker-toggle>
+      <mat-datepicker #pickerDevolucao></mat-datepicker>
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="fechar()" cdkFocusInitial>Cancelar</button>
+    <button mat-raised-button color="primary" (click)="salvar()">Salvar</button>
+  </mat-dialog-actions>
+</form>

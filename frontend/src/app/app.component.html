@@ -1,0 +1,55 @@
+<link
+  href="https://fonts.googleapis.com/css2?family=Inter:wght@300..900&display=swap"
+  rel="stylesheet"
+/>
+<mat-sidenav-container color="primary" class="h-screen">
+  <mat-sidenav #sidenav mode="side" opened class="m-0 p-0" style="width: 250px">
+    <div class="flex flex-col justify-between h-full !overflow-hidden">
+      <div class="mt-8">
+        <img
+          class="mb-2"
+          src="assets/logo_back.png"
+          alt="Logo"
+          width="140"
+          height="30"
+          style="margin-left: 45px"
+        />
+        @for (menu of menus; track menu.route) {
+          <mat-nav-list class="!m-0 !p-0">
+            <mat-list-item (click)="navigateTo(menu.route)">
+              <mat-icon matListItemIcon>{{ menu.icon }}</mat-icon>
+              {{ menu.name }}
+            </mat-list-item>
+          </mat-nav-list>
+        }
+      </div>
+
+      <div class="mb-8">
+        <mat-list-item class="!p-0 !min-h-0 flex flex-col">
+          <div class="flex flex-col text-center">
+            <small>Desenvolvido por</small>
+            <span>Leonardo Goulart</span>
+          </div>
+        </mat-list-item>
+
+        <div class="flex justify-center gap-0 mt-2">
+          <a mat-button href="https://github.com/Aschtward" target="_blank">
+            <i class="fab fa-github fa-2x"></i>
+          </a>
+          <a
+            mat-button
+            href="https://www.linkedin.com/in/leonardo-goulart-92575922a/"
+            target="_blank"
+          >
+            <i class="fab fa-linkedin fa-2x"></i>
+          </a>
+        </div>
+      </div>
+    </div>
+  </mat-sidenav>
+  <mat-sidenav-content>
+    <div class="content">
+      <router-outlet></router-outlet>
+    </div>
+  </mat-sidenav-content>
+</mat-sidenav-container>

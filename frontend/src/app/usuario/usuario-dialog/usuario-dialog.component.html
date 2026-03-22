@@ -1,0 +1,45 @@
+<h2 mat-dialog-title>
+  {{ usuario.id ? "Editar Usuário" : "Novo Usuário" }}
+</h2>
+<form #form="ngForm">
+  <mat-dialog-content class="dialog-content">
+    <mat-form-field class="w-full">
+      <mat-label>Nome</mat-label>
+      <input name="nome" matInput [(ngModel)]="usuario.nome" required />
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Email</mat-label>
+      <input name="email" matInput [(ngModel)]="usuario.email" required />
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Telefone</mat-label>
+      <input name="telefone" matInput [(ngModel)]="usuario.telefone" required />
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Data de Cadastro</mat-label>
+      <input
+        name="dataCadastro"
+        matInput
+        [matDatepicker]="picker"
+        [(ngModel)]="usuario.dataCadastro"
+        [max]="hoje"
+        required
+      />
+      <mat-datepicker-toggle
+        matIconSuffix
+        [for]="picker"
+      ></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
+
+    <mat-dialog-actions align="end">
+      <button mat-button (click)="fechar()">Cancelar</button>
+      <button mat-raised-button color="primary" (click)="salvar()">
+        Salvar
+      </button>
+    </mat-dialog-actions>
+  </mat-dialog-content>
+</form>

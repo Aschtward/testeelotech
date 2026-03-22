@@ -1,0 +1,88 @@
+<h2 mat-dialog-title>
+  {{ livro.id ? "Editar Livro" : "Novo Livro" }}
+</h2>
+<form #form="ngForm">
+  <mat-dialog-content class="dialog-content">
+    @if (!livro.id) {
+      <mat-form-field class="w-full">
+        <mat-label>Buscar no Google Books</mat-label>
+        <input
+          name="busca"
+          matInput
+          [(ngModel)]="busca"
+          [matAutocomplete]="autoTitulo"
+          (input)="onTituloInput($any($event.target).value)"
+        />
+        <mat-autocomplete #autoTitulo="matAutocomplete">
+          @for (sugestao of sugestoes; track sugestao.isbn) {
+            <mat-option
+              [value]="sugestao.titulo"
+              (onSelectionChange)="selecionarLivro(sugestao)"
+            >
+              {{ sugestao.titulo }}
+            </mat-option>
+          }
+        </mat-autocomplete>
+      </mat-form-field>
+    }
+
+    <mat-form-field class="w-full">
+      <mat-label>Título</mat-label>
+      <input name="titulo" matInput [(ngModel)]="livro.titulo" required />
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Autor</mat-label>
+      <input name="autor" matInput [(ngModel)]="livro.autor" required />
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>ISBN</mat-label>
+      <input name="isbn" matInput [(ngModel)]="livro.isbn" required />
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Data de Publicação</mat-label>
+      <input
+        name="dataPublicacao"
+        matInput
+        [matDatepicker]="picker"
+        [(ngModel)]="livro.dataPublicacao"
+        required
+      />
+      <mat-datepicker-toggle
+        matIconSuffix
+        [for]="picker"
+      ></mat-datepicker-toggle>
+      <mat-datepicker #picker></mat-datepicker>
+    </mat-form-field>
+
+    <mat-form-field class="w-full">
+      <mat-label>Categorias</mat-label>
+
+      <mat-chip-grid #chipGrid aria-label="Categorias do livro" class="w-full">
+        @for (categoria of livro.categoria; track categoria) {
+          <mat-chip-row (removed)="removerCategoria(categoria)">
+            {{ categoria }}
+            <button matChipRemove [attr.aria-label]="'remover ' + categoria">
+              <mat-icon>cancel</mat-icon>
+            </button>
+          </mat-chip-row>
+        }
+        <input
+          name="categoria"
+          placeholder="Nova categoria..."
+          [matChipInputFor]="chipGrid"
+          [matChipInputSeparatorKeyCodes]="separatorKeysCodes"
+          (matChipInputTokenEnd)="adicionarCategoria($event)"
+          required
+        />
+      </mat-chip-grid>
+    </mat-form-field>
+  </mat-dialog-content>
+
+  <mat-dialog-actions align="end">
+    <button mat-button (click)="fechar()">Cancelar</button>
+    <button mat-raised-button color="primary" (click)="salvar()">Salvar</button>
+  </mat-dialog-actions>
+</form>

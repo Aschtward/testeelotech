@@ -1,0 +1,96 @@
+<div class="justify-between flex mt-8 ml-8 mr-8 p-0">
+  <mat-form-field class="w-96">
+    <mat-label>Pesquisar</mat-label>
+    <input
+      matInput
+      [(ngModel)]="busca"
+      (input)="onBuscaInput($any($event.target).value)"
+    />
+  </mat-form-field>
+  <div class="flex gap-4">
+    @if (actions.length > 0) {
+      <button mat-raised-button [matMenuTriggerFor]="menu" color="primary">
+        Ações
+      </button>
+      <mat-menu #menu="matMenu">
+        @for (action of actions; track action.label) {
+          <button mat-menu-item (click)="executeAction(action)">
+            <mat-icon>{{ action.icon }}</mat-icon>
+            <span>{{ action.label }}</span>
+          </button>
+        }
+      </mat-menu>
+    }
+    <button mat-raised-button (click)="onAdicionar()" color="primary">
+      <mat-icon>add</mat-icon>
+      Novo
+    </button>
+  </div>
+</div>
+
+@if (loading) {
+  <div class="fixed inset-0 flex items-center justify-center">
+    <mat-spinner diameter="48"></mat-spinner>
+  </div>
+}
+
+<div class="ml-8 mr-8" [hidden]="loading">
+  <table mat-table [dataSource]="dataSource">
+    <ng-container matColumnDef="select">
+      <th mat-header-cell *matHeaderCellDef>
+        <mat-checkbox
+          (change)="toggleAllRows()"
+          [checked]="selection.hasValue() && isAllSelected()"
+          [indeterminate]="selection.hasValue() && !isAllSelected()"
+        ></mat-checkbox>
+      </th>
+      <td mat-cell *matCellDef="let row">
+        <mat-checkbox
+          (click)="$event.stopPropagation()"
+          (change)="toggleRow(row)"
+          [checked]="selection.isSelected(row)"
+        ></mat-checkbox>
+      </td>
+    </ng-container>
+    @for (item of displayedColumns; track $index) {
+      <ng-container [matColumnDef]="item">
+        <th mat-header-cell *matHeaderCellDef>{{ displayedLabels[$index] }}</th>
+        <td mat-cell *matCellDef="let element">
+          {{
+            isDate(element[item])
+              ? (element[item] | date: "dd/MM/yyyy")
+              : element[item]
+          }}
+        </td>
+      </ng-container>
+    }
+    <ng-container matColumnDef="actions">
+      <th mat-header-cell *matHeaderCellDef></th>
+
+      <td mat-cell *matCellDef="let element">
+        <button mat-icon-button [matMenuTriggerFor]="menu">
+          <mat-icon>more_vert</mat-icon>
+        </button>
+
+        <mat-menu #menu="matMenu">
+          <button mat-menu-item (click)="onEditar(element)">
+            <mat-icon>edit</mat-icon>
+            <span>Editar</span>
+          </button>
+
+          <button mat-menu-item (click)="onExcluir(element)">
+            <mat-icon>delete</mat-icon>
+            <span>Excluir</span>
+          </button>
+        </mat-menu>
+      </td>
+    </ng-container>
+    <tr mat-header-row *matHeaderRowDef="displayedColumnsWithActions"></tr>
+    <tr mat-row *matRowDef="let row; columns: displayedColumnsWithActions"></tr>
+    <tr class="mat-row" *matNoDataRow>
+      <td class="mat-cell text-center p-4" [attr.colspan]="displayedColumnsWithActions.length">
+        Nenhum registro encontrado.
+      </td>
+    </tr>
+  </table>
+</div>
